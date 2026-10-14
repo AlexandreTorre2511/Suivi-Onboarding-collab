@@ -1,0 +1,938 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Prototype de l'application Suivi de Mission Inov Team : suivi des collaborateurs en mission par les managers, les RH et les commerciaux.">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Suivi de Mission Inov</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: en-tête fixe, navigation latérale (rangée défilante sur mobile), zone de travail à droite */
+:root{
+  --bg:#F3F6FA; --surface:#FFFFFF; --sunk:#EAEFF5; --line:#D8E0EA; --line-2:#C5D0DC;
+  --fg:#132034; --muted:#5A6879; --accent:#1565C0; --accent-2:#0D4C95; --accent-soft:#E2EDFB; --on-accent:#FFFFFF;
+  --ok:#2E7D4F; --ok-soft:#DEF1E5; --warn:#A86200; --warn-soft:#FBEBD1; --bad:#C62828; --bad-soft:#FADCDA;
+  --c-man:#1565C0; --c-rh:#00808C; --c-com:#6A4FB3; --c-ev:#AD1457;
+  --c-man-soft:#E2EDFB; --c-rh-soft:#D9F1F2; --c-com-soft:#ECE6F8; --c-ev-soft:#F9E0EA;
+  --f-ui:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:10px; --shadow:0 1px 2px rgba(19,32,52,.06),0 4px 16px rgba(19,32,52,.06);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0D131B; --surface:#141C26; --sunk:#1B2532; --line:#283544; --line-2:#344457;
+  --fg:#E3EAF2; --muted:#93A2B4; --accent:#6AAEF5; --accent-2:#9CC9FA; --accent-soft:#14283F; --on-accent:#06172A;
+  --ok:#6CCB92; --ok-soft:#163325; --warn:#F0B35A; --warn-soft:#382811; --bad:#F2867E; --bad-soft:#3B1C1A;
+  --c-man:#6AAEF5; --c-rh:#4FC9D3; --c-com:#B9A4F0; --c-ev:#F07FAE;
+  --c-man-soft:#14283F; --c-rh-soft:#0F3236; --c-com-soft:#261F3D; --c-ev-soft:#3A1828;
+  --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D131B; --surface:#141C26; --sunk:#1B2532; --line:#283544; --line-2:#344457;
+  --fg:#E3EAF2; --muted:#93A2B4; --accent:#6AAEF5; --accent-2:#9CC9FA; --accent-soft:#14283F; --on-accent:#06172A;
+  --ok:#6CCB92; --ok-soft:#163325; --warn:#F0B35A; --warn-soft:#382811; --bad:#F2867E; --bad-soft:#3B1C1A;
+  --c-man:#6AAEF5; --c-rh:#4FC9D3; --c-com:#B9A4F0; --c-ev:#F07FAE;
+  --c-man-soft:#14283F; --c-rh-soft:#0F3236; --c-com-soft:#261F3D; --c-ev-soft:#3A1828;
+  --shadow:0 1px 2px rgba(0,0,0,.3); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--f-ui);font-size:14px;line-height:1.5}
+h1,h2,h3,h4{margin:0;text-wrap:balance}
+h1{font-size:22px;font-weight:800;letter-spacing:-.015em}
+h2{font-size:16px;font-weight:700}
+h3{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+p{margin:0}
+a{color:var(--accent)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+
+/* En-tête */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--surface);border-bottom:1px solid var(--line);padding-inline:16px;padding-block:10px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px}
+.mark{width:30px;height:30px;border-radius:8px;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;font-weight:800;font-size:13px;letter-spacing:-.02em}
+.brand b{font-weight:800;letter-spacing:-.01em}
+.brand span{display:block;font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.who{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.who label{font-size:12px;color:var(--muted)}
+select,input[type=text],input[type=date],input[type=time],input[type=search],textarea{background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:7px 10px;min-width:0}
+textarea{width:100%;resize:vertical;min-height:64px}
+
+/* Mise en page */
+.shell{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:calc(100% - 56px)}
+nav.side{border-right:1px solid var(--line);padding-inline:12px;padding-block:16px;display:flex;flex-direction:column;gap:2px;background:var(--surface)}
+nav.side button{display:flex;align-items:center;justify-content:space-between;gap:8px;border:0;background:transparent;text-align:left;padding:9px 12px;border-radius:8px;color:var(--muted);font-weight:600}
+nav.side button:hover{background:var(--sunk);color:var(--fg)}
+nav.side button[aria-current="page"]{background:var(--accent-soft);color:var(--accent)}
+.navsep{height:1px;background:var(--line);margin:10px 4px}
+.badge{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--bad);color:#fff;font-size:11px;font-weight:700;display:inline-grid;place-items:center}
+main{padding-inline:24px;padding-block:24px 64px;min-width:0;display:flex;flex-direction:column;gap:20px;max-width:1240px;width:100%}
+@media (max-width:820px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  nav.side{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding-block:8px}
+  nav.side button{white-space:nowrap}
+  .navsep{display:none}
+  main{padding-inline:16px}
+}
+
+/* Composants */
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.head .sub{color:var(--muted);margin-top:4px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);padding:8px 14px;border-radius:8px;font-weight:700;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{background:var(--accent-2);border-color:var(--accent-2)}
+.btn.sec{background:var(--surface);color:var(--fg);border-color:var(--line-2)}
+.btn.sec:hover{background:var(--sunk)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--accent);padding-inline:8px}
+.btn.ghost:hover{background:var(--accent-soft)}
+.btn.danger{background:var(--surface);color:var(--bad);border-color:var(--line-2)}
+.btn.sm{padding:5px 10px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);min-width:0}
+.card > .ch{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.card > .cb{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:980px){.g3{grid-template-columns:repeat(2,minmax(0,1fr))}.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.g2,.g3{grid-template-columns:minmax(0,1fr)}}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.kpi b{font-family:var(--f-mono);font-size:26px;font-weight:600;line-height:1.2}
+.kpi span{font-size:12px;color:var(--muted);font-weight:600}
+.kpi.bad b{color:var(--bad)} .kpi.warn b{color:var(--warn)} .kpi.ok b{color:var(--ok)}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;background:var(--sunk);color:var(--muted)}
+.p-bad{background:var(--bad-soft);color:var(--bad)} .p-warn{background:var(--warn-soft);color:var(--warn)} .p-ok{background:var(--ok-soft);color:var(--ok)}
+.p-acc{background:var(--accent-soft);color:var(--accent)}
+.cat{font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:2px 6px;border-radius:4px}
+.cat-Manager{background:var(--c-man-soft);color:var(--c-man)} .cat-RH{background:var(--c-rh-soft);color:var(--c-rh)} .cat-Commercial{background:var(--c-com-soft);color:var(--c-com)} .cat-Admin,.cat-Evt{background:var(--c-ev-soft);color:var(--c-ev)}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none;background:var(--line-2)}
+.dot.vert{background:var(--ok)} .dot.orange{background:var(--warn)} .dot.rouge{background:var(--bad)}
+.list{display:flex;flex-direction:column}
+.li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line)}
+.li:last-child{border-bottom:0}
+.li .t{font-weight:700}
+.li .s{font-size:12.5px;color:var(--muted)}
+.li.click{cursor:pointer} .li.click:hover{background:var(--sunk)}
+.empty{padding:18px 16px;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr.click{cursor:pointer} tr.click:hover td{background:var(--sunk)}
+tr:last-child td{border-bottom:0}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{border:0;background:transparent;padding:10px 14px;font-weight:700;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--accent);border-color:var(--accent)}
+.meta{display:flex;flex-wrap:wrap;gap:4px 18px;color:var(--muted);font-size:13px}
+.meta b{color:var(--fg);font-weight:600}
+.alert{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:8px;border:1px solid var(--line)}
+.alert.orange{background:var(--warn-soft);border-color:transparent} .alert.rouge{background:var(--bad-soft);border-color:transparent}
+.alert .dot{margin-top:6px}
+.alert > div{flex:1;min-width:0}
+.field{display:flex;flex-direction:column;gap:6px}
+.field > label,.field > .lbl{font-weight:700;font-size:13px}
+.req{color:var(--bad)}
+.hint{font-size:12px;color:var(--muted);font-weight:500}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{border:1px solid var(--line-2);background:var(--surface);padding:6px 12px;border-radius:999px;font-weight:600;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.qrow{border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.qrow .qh{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.qrow .qh input[type=text]{flex:1 1 220px}
+.lock{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--muted);background:var(--sunk);padding:3px 8px;border-radius:6px}
+.answers{display:grid;grid-template-columns:minmax(160px,38%) minmax(0,1fr);gap:0}
+.answers > div{padding:10px 0;border-bottom:1px solid var(--line)}
+.answers > div:nth-child(odd){color:var(--muted);font-weight:600;padding-right:16px}
+@media (max-width:560px){.answers{grid-template-columns:minmax(0,1fr)}.answers > div:nth-child(odd){border-bottom:0;padding-bottom:0}}
+.split{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+@media (max-width:980px){.split{grid-template-columns:minmax(0,1fr)}}
+.ia{border:1px dashed var(--accent);background:var(--accent-soft)}
+.ia .out{white-space:pre-wrap;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13.5px}
+.check{display:flex;gap:8px;align-items:center}
+
+/* Calendrier (Gantt) */
+.gantt{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.g-inner{min-width:calc(190px + var(--days) * 30px)}
+.g-row{display:grid;grid-template-columns:190px minmax(0,1fr);border-bottom:1px solid var(--line)}
+.g-row:last-child{border-bottom:0}
+.g-name{padding:8px 12px;border-right:1px solid var(--line);position:sticky;left:0;background:var(--surface);z-index:2;min-width:0}
+.g-name b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-name span{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.g-track{position:relative;height:auto;min-height:52px}
+.g-days{display:grid;grid-template-columns:repeat(var(--days),30px);position:absolute;inset:0}
+.g-days > i{border-right:1px solid var(--line);opacity:.55}
+.g-days > i.we{background:var(--sunk);opacity:1}
+.g-head .g-days{position:static}
+.g-head .g-days > span{font-size:10.5px;text-align:center;padding:4px 0;color:var(--muted);font-family:var(--f-mono);border-right:1px solid var(--line);line-height:1.25}
+.g-head .g-days > span.we{background:var(--sunk)}
+.g-head .g-days > span.td{background:var(--accent);color:var(--on-accent);font-weight:600}
+.g-today{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);z-index:1}
+.g-item{position:absolute;height:20px;border-radius:5px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:4px;padding:0 6px;white-space:nowrap;overflow:hidden;border:0;z-index:1}
+.g-bar{border:1.5px dashed currentColor;background:transparent}
+.g-bar.Manager{color:var(--c-man);background:var(--c-man-soft)} .g-bar.RH{color:var(--c-rh);background:var(--c-rh-soft)} .g-bar.Commercial{color:var(--c-com);background:var(--c-com-soft)}
+.g-bar.late{color:var(--bad);background:var(--bad-soft)}
+.g-meet{color:var(--on-accent)}
+.g-meet.Manager{background:var(--c-man)} .g-meet.RH{background:var(--c-rh)} .g-meet.Commercial{background:var(--c-com)}
+.g-done{background:var(--ok-soft);color:var(--ok)}
+.g-ev{background:var(--c-ev-soft);color:var(--c-ev)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12px;color:var(--muted);align-items:center}
+.legend i{display:inline-block;width:18px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+
+/* Fenêtre modale et notifications */
+.overlay{position:fixed;inset:0;background:rgba(10,18,28,.45);display:grid;place-items:center;padding:16px;z-index:50}
+.modal{background:var(--surface);border-radius:12px;box-shadow:var(--shadow);width:min(560px,100%);max-height:calc(100% - 32px);overflow:auto;display:flex;flex-direction:column}
+.modal .mh{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.modal .mb{padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.modal .mf{padding:12px 18px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;z-index:60;max-width:calc(100% - 32px);box-shadow:var(--shadow)}
+.mail{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:2px;cursor:pointer}
+.mail:last-child{border-bottom:0}
+.mail.unread{background:var(--accent-soft)}
+.mail .ms{font-weight:700}
+.mail.unread .ms::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:8px;vertical-align:middle}
+.err{color:var(--bad);font-weight:600;font-size:13px}
+.foot{font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:12px}
+@media (prefers-reduced-motion:no-preference){.btn,.li,nav.side button{transition:background .12s,border-color .12s,color .12s}}
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="brand"><div class="mark" aria-hidden="true">IT</div><div><b>Inov Team</b><span>Suivi de Mission</span></div></div>
+  <div class="who"><label for="whoSel">Connecté en tant que</label><select id="whoSel"></select></div>
+</header>
+<div class="shell">
+  <nav class="side" id="nav" aria-label="Navigation principale"></nav>
+  <main id="view"></main>
+</div>
+<div id="modalRoot"></div>
+<div id="toastRoot" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+/* ---------- Dates ---------- */
+const pad = n => String(n).padStart(2,'0');
+const iso = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y,m-1,d) };
+const add = (s,n) => { const d = parse(s); d.setDate(d.getDate()+n); return iso(d) };
+const diff = (a,b) => Math.round((parse(a)-parse(b))/864e5);
+const T = iso(new Date());
+const fmt = s => s ? parse(s).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) : '';
+const fmtY = s => s ? parse(s).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'}) : '';
+const fmtL = s => s ? parse(s).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) : '';
+const rel = s => { const n = diff(s,T); if(n===0) return "aujourd'hui"; if(n===1) return 'demain'; if(n===-1) return 'hier'; return n>0 ? 'dans '+n+' j' : 'il y a '+(-n)+' j' };
+const uid = p => p+Math.random().toString(36).slice(2,10);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- Règles de jalons (workflow fixe) ---------- */
+const RULES = {
+  Manager:{fixed:[[1,'tm1','J+1'],[7,'tm2','J+7'],[30,'tm3','J+30']], every:30, rec:'tm4'},
+  RH:{fixed:[[30,'trh','J+30']], every:90, rec:'trh'},
+  Commercial:{fixed:[[7,'tcom','J+7'],[30,'tcom','J+30'],[90,'tcom','J+90']], every:90, rec:'tcom'}
+};
+const CATS = ['Manager','RH','Commercial'];
+const OPT_SAT = ['Très satisfaisant','Satisfaisant','Moyen','Insatisfaisant'];
+
+/* ---------- Données d'exemple ---------- */
+function seed(){
+  const S = {version:3, lastSync:add(T,-1), users:[], collabs:[], missions:[], templates:[], followups:[], notifs:[], warnings:[], events:[], meetings:[], mails:[]};
+  S.users = [
+    {id:'u_gael',name:'Gaël',role:'Manager',email:'gael@inov-team.fr'},
+    {id:'u_max',name:'Max',role:'Manager',email:'max@inov-team.fr'},
+    {id:'u_lorine',name:'Lorine',role:'RH',email:'lorine@inov-team.fr'},
+    {id:'u_alex',name:'Alexandre TORRE',role:'Commercial',email:'alexandre.torre@inov-team.fr'},
+    {id:'u_admin',name:'Admin Inov',role:'Admin',email:'admin@inov-team.fr'}
+  ];
+  const q = (label,type,opts,req) => ({id:uid('q'),label,type,options:opts||[],required:!!req});
+  const tpl = (fam,name,category,questions) => ({id:fam+'_v1',family:fam,version:1,name,category,system:true,active:true,published:true,questions});
+  S.templates = [
+    tpl('tm1','Premier jour','Manager',[q('Accueil client (locaux, matériel)','select',OPT_SAT,1),q('Accueil des équipes','select',OPT_SAT,1),q('Poste de travail opérationnel','bool',[],1),q('Points bloquants','text')]),
+    tpl('tm2','Première semaine','Manager',[q('Intégration et communication côté client','select',OPT_SAT,1),q('Intégration et communication côté Inov','select',OPT_SAT,1),q('Tâches conformes à la présentation de la mission','bool',[],1),q('Difficultés rencontrées','text')]),
+    tpl('tm3','Premier mois','Manager',[q('Qualité du poste de travail','select',OPT_SAT,1),q('Intérêt pour le projet','select',OPT_SAT,1),q('Concordance avec les tâches présentées','bool',[],1),q('Difficultés et solutions déployées','text'),q('Actions','text')]),
+    tpl('tm4','Suivi régulier manager','Manager',[q('État d\'avancement du projet','text',[],1),q('Responsabilité et autonomie','select',OPT_SAT,1),q('Adéquation avec les attentes initiales','bool',[],1),q('Souhaite changer de mission','bool'),q('Actions','text')]),
+    tpl('trh','Suivi RH standard','RH',[q('Ressenti général','select',OPT_SAT,1),q('Projection dans la société','text'),q('Connaît les acteurs Inov (manager, commercial, RH)','bool'),q('Participe aux événements de l\'agence','bool'),q('Difficultés administratives','text')]),
+    tpl('tcom','Suivi client standard','Commercial',[q('Échange avec','select',['Collaborateur','Client','Les deux'],1),q('Météo de la mission','select',['Vert','Orange','Rouge'],1),q('Retour du client','text'),q('Niveau technique','select',['Excellent','Bon','Moyen','Insuffisant']),q('Autonomie et force de proposition','select',['Excellent','Bon','Moyen','Insuffisant']),q('Perspectives et évolution de la mission','text'),q('À valoriser (surperformance, périmètre élargi)','bool'),q('Opportunité commerciale','text')])
+  ];
+  S.collabs = [
+    {id:'c1',ext:'BD-1042',name:'Julien Marchal',email:'j.marchal@inov-team.fr',poste:'Développeur Java',managerId:'u_gael',commercialId:'u_alex',notified:['u_gael','u_alex','u_lorine']},
+    {id:'c2',ext:'BD-0987',name:'Sarah Kessler',email:'s.kessler@inov-team.fr',poste:'Data Engineer',managerId:'u_gael',commercialId:'u_alex',notified:['u_gael','u_alex']},
+    {id:'c3',ext:'BD-0712',name:'Thomas Rinaldi',email:'t.rinaldi@inov-team.fr',poste:'Ingénieur DevOps',managerId:'u_max',commercialId:'u_alex',notified:['u_max','u_alex','u_lorine']},
+    {id:'c4',ext:'BD-1051',name:'Inès Belkacem',email:'i.belkacem@inov-team.fr',poste:'Cheffe de projet MOA',managerId:'u_max',commercialId:'u_alex',notified:['u_max','u_alex']},
+    {id:'c5',ext:'BD-0899',name:'Karim Dahmani',email:'k.dahmani@inov-team.fr',poste:'Développeur .NET',managerId:'u_gael',commercialId:'u_alex',notified:['u_gael','u_alex']},
+    {id:'c6',ext:'BD-1060',name:'Léa Fontaine',email:'l.fontaine@inov-team.fr',poste:'Ingénieure Test et Validation',managerId:'u_max',commercialId:'u_alex',notified:['u_max','u_alex','u_lorine']}
+  ];
+  S.missions = [
+    {id:'m1',collabId:'c1',client:'Amadeus',start:add(T,-16),end:'',desc:'Évolutions du moteur de tarification, équipe Pricing.'},
+    {id:'m2',collabId:'c2',client:'PRO BTP',start:add(T,-100),end:'',desc:'Industrialisation des pipelines data et migration Airflow.'},
+    {id:'m3b',collabId:'c3',client:'EPS',start:add(T,-420),end:add(T,-345),desc:'Mise en place de la chaîne CI/CD.'},
+    {id:'m3',collabId:'c3',client:'Orange',start:add(T,-340),end:'',desc:'Exploitation et automatisation de la plateforme Kubernetes.'},
+    {id:'m4',collabId:'c4',client:'Air France',start:add(T,-2),end:add(T,180),desc:'Pilotage MOA du projet Escales.'},
+    {id:'m5',collabId:'c5',client:'Docaposte',start:add(T,-196),end:'',desc:'Refonte du portail client en .NET 8.'},
+    {id:'m6',collabId:'c6',client:'Kappa Engineering',start:add(T,5),end:'',desc:'Campagne de validation des bancs de test.'}
+  ];
+  return S;
+}
+
+function buildSeedHistory(S){
+  const M = id => S.missions.find(m=>m.id===id);
+  const tq = fam => S.templates.find(t=>t.family===fam).questions;
+  const ans = (fam, vals) => { const o = {}; tq(fam).forEach((qq,i)=>{ if(vals[i]!==undefined && vals[i]!=='') o[qq.id]=vals[i] }); return o };
+  const sf = (mid, fam, author, off, vals, comment) => {
+    const m = M(mid), t = S.templates.find(x=>x.family===fam);
+    const f = {id:uid('f'),templateId:t.id,snapshot:{name:t.name,version:t.version,category:t.category,questions:t.questions},missionId:mid,collabId:m.collabId,authorId:author,date:add(T,off),answers:ans(fam,vals),comment:comment||'',locked:true};
+    S.followups.push(f); completeNotif(S,f);
+  };
+  ['m1','m2','m4','m6'].forEach(id=>genNotifs(S,M(id),true));
+  // m3 et m5 : missions anciennes reprises dans l'outil avec le prochain jalon de chaque rôle
+  const pend = (mid,cat,fam,off,label) => S.notifs.push({id:uid('n'),missionId:mid,collabId:M(mid).collabId,category:cat,family:fam,label,due:add(T,off),status:'pending'});
+  pend('m3','RH','trh',-4,'Suivi trimestriel');
+
+  // Historique
+  sf('m1','tm1','u_gael',-15,['Très satisfaisant','Très satisfaisant',true,''],'Bon accueil, badge et poste prêts dès le premier jour.');
+  sf('m1','tm2','u_gael',-9,['Satisfaisant','Très satisfaisant',true,'Prise en main du moteur de règles un peu longue.'],'Monte en compétence, équipe disponible.');
+  sf('m2','tm1','u_gael',-99,['Très satisfaisant','Satisfaisant',true,''],'');
+  sf('m2','tcom','u_alex',-93,['Les deux','Vert','Client satisfait de la prise de poste.','Bon','Bon','','',''],'');
+  sf('m2','tm2','u_gael',-93,['Satisfaisant','Satisfaisant',true,''],'');
+  sf('m2','tm3','u_gael',-70,['Très satisfaisant','Très satisfaisant',true,'',''],'Très autonome sur les pipelines.');
+  sf('m2','trh','u_lorine',-69,['Très satisfaisant','Se voit évoluer vers un rôle de lead data.',true,true,''],'');
+  sf('m2','tcom','u_alex',-70,['Client','Vert','Lead Data très content, parle de prolonger.','Excellent','Bon','Prolongation probable en janvier.','',''],'');
+  sf('m2','tm4','u_gael',-38,['A repris le pilotage de la migration Airflow, hors périmètre initial.','Très satisfaisant',true,false,''],'');
+  sf('m2','tcom','u_alex',-10,['Les deux','Vert','Le client souligne la qualité de la migration Airflow.','Excellent','Excellent','Extension de périmètre possible sur le lot 2.',true,'Besoin d\'un second Data Engineer en janvier.'],'Préparer une revalorisation du TJ au renouvellement.');
+  sf('m4','tm1','u_max',-1,['Satisfaisant','Très satisfaisant',false,'Accès VPN pas encore ouvert.'],'Relancer le client pour les accès.');
+  sf('m3','tcom','u_alex',-78,['Client','Vert','Mission stable.','Bon','Bon','Renouvellement probable fin d\'année.','',''],'');
+  sf('m3','tm4','u_max',-24,['Run stable, automatisations livrées.','Satisfaisant',true,false,'Point client à caler'],'Le client évoque une réinternalisation de l\'équipe en janvier.');
+  sf('m5','tcom','u_alex',-91,['Les deux','Vert','Bons retours, aucun sujet.','Bon','Bon','','',''],'');
+  sf('m5','trh','u_lorine',-30,['Satisfaisant','RAS, se plaît bien.',true,false,''],'');
+  sf('m5','tm4','u_gael',-27,['Livraison du module facturation en cours.','Satisfaisant',true,false,''],'');
+
+  S.warnings = [
+    {id:uid('w'),collabId:'c3',scope:'client',level:'rouge',text:'Le client envisage de réinternaliser l\'équipe en janvier.',date:add(T,-20),authorId:'u_max',open:true},
+    {id:uid('w'),collabId:'c1',scope:'collab',level:'orange',text:'Trajets longs depuis Nice, fatigue. Demande deux jours de télétravail.',date:add(T,-5),authorId:'u_lorine',open:true}
+  ];
+  S.events = [
+    {id:uid('e'),collabId:'c5',date:add(T,9),title:'MEP clé du portail client',desc:'Mise en production majeure, prévoir un point de soutien la veille.'},
+    {id:uid('e'),collabId:'c2',date:add(T,16),title:'Démo client du pipeline Airflow',desc:''}
+  ];
+  S.meetings = [
+    {id:uid('r'),collabId:'c3',missionId:'m3',notifId:S.notifs.find(n=>n.missionId==='m3'&&n.category==='Commercial'&&n.status==='pending').id,date:add(T,5),time:'10:00',organizerId:'u_alex',title:'Suivi trimestriel Orange'},
+    {id:uid('r'),collabId:'c5',missionId:'m5',notifId:S.notifs.find(n=>n.missionId==='m5'&&n.category==='Manager'&&n.status==='pending').id,date:add(T,2),time:'12:30',organizerId:'u_gael',title:'Déjeuner de suivi'}
+  ];
+  S.mails = [];
+  S.warnings.forEach(w=>mailTo(S, S.collabs.find(c=>c.id===w.collabId).notified, 'Alerte '+(w.scope==='client'?'client':'collaborateur')+' : '+S.collabs.find(c=>c.id===w.collabId).name, w.text, w.date, 'warning'));
+  return S;
+}
+
+/* ---------- Moteur de rappels ---------- */
+function genNotifs(S, m, silent){
+  let n = 0;
+  CATS.forEach(cat=>{
+    const r = RULES[cat];
+    r.fixed.forEach(([d,fam,lab])=>{
+      const t = S.templates.find(x=>x.family===fam);
+      S.notifs.push({id:uid('n'),missionId:m.id,collabId:m.collabId,category:cat,family:fam,label:lab+' '+(t?t.name:''),due:add(m.start,d),status:'pending'}); n++;
+    });
+  });
+  return n;
+}
+function completeNotif(S, f){
+  const cat = f.snapshot.category, fam = S.templates.find(t=>t.id===f.templateId)?.family;
+  const pend = S.notifs.filter(n=>n.missionId===f.missionId && n.category===cat && n.status==='pending').sort((a,b)=>a.due<b.due?-1:1);
+  const hit = pend.find(n=>n.family===fam) || pend[0];
+  if(hit){ hit.status='done'; hit.doneAt=f.date; hit.followupId=f.id;
+    S.meetings.filter(r=>r.notifId===hit.id).forEach(r=>r.followupId=f.id); }
+  const m = S.missions.find(x=>x.id===f.missionId);
+  const left = S.notifs.filter(n=>n.missionId===f.missionId && n.category===cat && n.status==='pending');
+  if(!left.length && m && !(m.end && m.end < f.date)){
+    const r = RULES[cat], t = S.templates.find(x=>x.family===r.rec);
+    S.notifs.push({id:uid('n'),missionId:m.id,collabId:m.collabId,category:cat,family:r.rec,label:(cat==='Manager'?'Suivi régulier':'Suivi trimestriel'),due:add(f.date,r.every),status:'pending'});
+  }
+  return hit;
+}
+function recipients(S,n){
+  const c = S.collabs.find(x=>x.id===n.collabId); if(!c) return [];
+  if(n.category==='Manager') return [c.managerId];
+  if(n.category==='Commercial') return [c.commercialId];
+  return S.users.filter(u=>u.role==='RH').map(u=>u.id);
+}
+function mailTo(S,to,subject,body,date,kind){
+  S.mails.unshift({id:uid('mail'),to:[...new Set(to)],subject,body,date:date||T,kind,readBy:[]});
+  if(S.mails.length>250) S.mails.length=250;
+}
+function processNotifs(S){
+  S.notifs.filter(n=>n.status==='pending').forEach(n=>{
+    const m = S.missions.find(x=>x.id===n.missionId), c = S.collabs.find(x=>x.id===n.collabId);
+    if(!m||!c) return;
+    if(m.end && m.end < T){ n.status='cancelled'; return }
+    if(n.due<=T && !n.sentAt){ n.sentAt=n.due; mailTo(S,recipients(S,n),'Suivi à réaliser : '+n.label+' · '+c.name,c.name+' ('+m.client+'). Le suivi '+n.category.toLowerCase()+' « '+n.label+' » est attendu pour le '+fmtY(n.due)+'.',n.due,'jalon') }
+    const r = add(n.due,3);
+    if(r<=T && !n.relanceAt){ n.relanceAt=r; mailTo(S,recipients(S,n),'Relance : '+n.label+' · '+c.name,'Ce suivi n\'est toujours pas complété. Échéance dépassée depuis le '+fmtY(n.due)+'.',r,'relance') }
+  });
+}
+
+/* ---------- Persistance locale ---------- */
+const KEY = 'inov-suivi-mission-v3';
+let S;
+try{ S = JSON.parse(localStorage.getItem(KEY)) }catch(e){ S = null }
+if(!S || S.version!==3){ S = buildSeedHistory(seed()) }
+processNotifs(S);
+const save = () => { try{ localStorage.setItem(KEY, JSON.stringify(S)) }catch(e){} };
+save();
+
+let ui = {view:'dashboard', me:'u_alex', collabId:null, tab:'synthese', fMission:'', fPeriod:'', fCat:'', followupId:null, draft:null, tplDraft:null, calMine:true, search:''};
+try{ const p = JSON.parse(localStorage.getItem(KEY+'-ui')); if(p && p.me) { ui.me=p.me; ui.calMine = p.calMine!==false } }catch(e){}
+const saveUi = () => { try{ localStorage.setItem(KEY+'-ui', JSON.stringify({me:ui.me, calMine:ui.calMine})) }catch(e){} };
+
+/* ---------- Capacités Claude (IA, téléchargement) ---------- */
+let sampleFn = null, downloads = null;
+if(window.claude && window.claude.use){
+  window.claude.use('sample').then(s=>{ sampleFn=s; render() }).catch(()=>{});
+  window.claude.use('downloads').then(d=>{ downloads=d; render() }).catch(()=>{});
+}
+
+/* ---------- Sélecteurs ---------- */
+const me = () => S.users.find(u=>u.id===ui.me);
+const userName = id => S.users.find(u=>u.id===id)?.name || 'Inconnu';
+const userRole = id => S.users.find(u=>u.id===id)?.role || '';
+const myCat = () => ({Manager:'Manager',RH:'RH',Commercial:'Commercial'})[me().role] || null;
+const collab = id => S.collabs.find(c=>c.id===id);
+const mission = id => S.missions.find(m=>m.id===id);
+const mStatus = m => m.start > T ? 'Prévue' : (m.end && m.end < T ? 'Terminée' : 'Active');
+const scope = () => { const u = me(); return S.collabs.filter(c => u.role!=='Manager' || c.managerId===u.id) };
+const inScope = id => scope().some(c=>c.id===id);
+const curMission = c => S.missions.filter(m=>m.collabId===c.id && mStatus(m)!=='Terminée').sort((a,b)=>a.start<b.start?-1:1)[0] || S.missions.filter(m=>m.collabId===c.id).sort((a,b)=>a.start>b.start?-1:1)[0];
+const isMine = n => { const u = me(), c = collab(n.collabId); if(!c) return false;
+  if(u.role==='Admin') return true; if(n.category!==myCat()) return false;
+  if(u.role==='Manager') return c.managerId===u.id; if(u.role==='Commercial') return c.commercialId===u.id; return true };
+const canFill = cat => me().role==='Admin' || myCat()===cat;
+const canCreateMission = c => { const u = me(); return u.role==='Admin' || u.role==='RH' || (u.role==='Manager' && c.managerId===u.id) };
+const latestTemplates = () => { const by = {}; S.templates.forEach(t=>{ if(!by[t.family] || by[t.family].version < t.version) by[t.family]=t }); return Object.values(by) };
+const meteoAnswer = f => { const q = f.snapshot.questions.find(x=>/météo/i.test(x.label)); return q ? f.answers[q.id] : null };
+function weather(c){
+  const ws = S.warnings.filter(w=>w.collabId===c.id && w.open);
+  if(ws.some(w=>w.level==='rouge')) return 'rouge';
+  if(ws.some(w=>w.level==='orange')) return 'orange';
+  const last = S.followups.filter(f=>f.collabId===c.id && meteoAnswer(f)).sort((a,b)=>a.date<b.date?1:-1)[0];
+  const v = last && meteoAnswer(last); return v ? v.toLowerCase() : 'vert';
+}
+const dueClass = d => d < T ? 'p-bad' : (diff(d,T)<=7 ? 'p-warn' : '');
+const dueText = d => d < T ? 'En retard de '+diff(T,d)+' j' : 'Échéance '+fmt(d);
+const meetingFor = n => S.meetings.find(r=>r.notifId===n.id);
+const unread = () => S.mails.filter(m=>m.to.includes(ui.me) && !m.readBy.includes(ui.me)).length;
+
+/* ---------- Rendu ---------- */
+const $ = s => document.querySelector(s);
+const view = $('#view');
+
+function renderHeader(){
+  $('#whoSel').innerHTML = S.users.map(u=>`<option value="${u.id}" ${u.id===ui.me?'selected':''}>${esc(u.name)} · ${u.role}</option>`).join('');
+  const u = me(), n = unread();
+  const items = [['dashboard','Tableau de bord'],['collabs',u.role==='Manager'?'Mes collaborateurs':'Collaborateurs'],['calendar','Calendrier'],['notifs','Notifications',n]];
+  if(u.role==='Admin') items.push(['templates','Templates et jalons']);
+  const active = {collab:'collabs',followupNew:'collabs',followupView:'collabs',templateEdit:'templates'}[ui.view] || ui.view;
+  $('#nav').innerHTML = items.map(([k,l,b])=>`<button data-a="go" data-v="${k}" ${active===k?'aria-current="page"':''}><span>${l}</span>${b?`<span class="badge">${b}</span>`:''}</button>`).join('')
+    + `<div class="navsep"></div><button data-a="reset"><span>Réinitialiser la démo</span></button>`;
+}
+
+function render(){
+  renderHeader();
+  const V = {dashboard:vDashboard, collabs:vCollabs, collab:vCollab, followupNew:vFollowupNew, followupView:vFollowupView, calendar:vCalendar, notifs:vNotifs, templates:vTemplates, templateEdit:vTemplateEdit}[ui.view] || vDashboard;
+  view.innerHTML = V();
+  afterRender();
+}
+let afterHooks = [];
+function afterRender(){ const h = afterHooks; afterHooks=[]; h.forEach(f=>f()) }
+
+/* Tableau de bord */
+function vDashboard(){
+  const u = me(), sc = scope(), scIds = new Set(sc.map(c=>c.id));
+  const mine = S.notifs.filter(n=>n.status==='pending' && scIds.has(n.collabId) && isMine(n) && n.due<=add(T,45)).sort((a,b)=>a.due<b.due?-1:1);
+  const late = mine.filter(n=>n.due<T), soon = mine.filter(n=>n.due<=add(T,14));
+  const warns = S.warnings.filter(w=>w.open && scIds.has(w.collabId)).sort((a,b)=>a.level==='rouge'?-1:1);
+  const evs = S.events.filter(e=>scIds.has(e.collabId) && e.date>=T && e.date<=add(T,30)).sort((a,b)=>a.date<b.date?-1:1);
+  const due = S.notifs.filter(n=>scIds.has(n.collabId) && n.due<=T && n.status!=='cancelled' && (u.role==='Admin' || n.category===myCat()));
+  const rate = due.length ? Math.round(due.filter(n=>n.status==='done').length/due.length*100) : 100;
+  const recent = S.followups.filter(f=>scIds.has(f.collabId)).sort((a,b)=>a.date<b.date?1:-1).slice(0,6);
+  return `
+  <div class="head"><div><h1>Bonjour ${esc(u.name.split(' ')[0])}</h1><p class="sub">${fmtL(T)} · ${u.role==='Manager'?sc.length+' collaborateurs managés':sc.length+' collaborateurs suivis'}</p></div>
+  <div class="actions"><button class="btn sec" data-a="go" data-v="calendar">Ouvrir le calendrier</button></div></div>
+  <div class="grid g4">
+    <div class="kpi ${late.length?'bad':'ok'}"><b>${late.length}</b><span>Suivis en retard</span></div>
+    <div class="kpi ${soon.length-late.length?'warn':''}"><b>${soon.length-late.length}</b><span>À réaliser sous 14 jours</span></div>
+    <div class="kpi ${warns.length?'bad':''}"><b>${warns.length}</b><span>Alertes ouvertes</span></div>
+    <div class="kpi ${rate>=80?'ok':'warn'}"><b>${rate} %</b><span>Suivis réalisés à échéance</span></div>
+  </div>
+  <div class="grid g2" style="align-items:start">
+    <section class="card"><div class="ch"><h2>${u.role==='Admin'?'Suivis attendus':'Mes suivis à réaliser'}</h2><span class="small muted">${mine.length} sous 45 jours</span></div>
+      <div class="list">${mine.slice(0,8).map(n=>{ const c = collab(n.collabId), m = mission(n.missionId), r = meetingFor(n);
+        return `<div class="li"><div style="min-width:0"><div class="t">${esc(c.name)} <span class="cat cat-${n.category}">${n.category}</span></div>
+          <div class="s">${esc(n.label)} · ${esc(m.client)}${r?' · RDV le '+fmt(r.date)+' à '+r.time:''}</div>
+          <div style="margin-top:4px"><span class="pill ${dueClass(n.due)}">${dueText(n.due)}</span>${n.relanceAt?' <span class="pill p-bad">Relancé</span>':''}</div></div>
+          <div class="actions">${r?'':`<button class="btn sec sm" data-a="plan" data-id="${n.id}">Planifier</button>`}${canFill(n.category)?`<button class="btn sm" data-a="fill" data-id="${n.id}">Remplir</button>`:''}</div></div>` }).join('') || '<div class="empty">Aucun suivi en attente. Tout est à jour.</div>'}</div></section>
+    <div class="grid" style="gap:16px">
+      <section class="card"><div class="ch"><h2>Alertes ouvertes</h2></div><div class="cb">${warns.map(w=>alertHTML(w,true)).join('') || '<p class="muted">Aucune alerte.</p>'}</div></section>
+      <section class="card"><div class="ch"><h2>Événements spéciaux à venir</h2></div><div class="list">${evs.map(e=>`<div class="li click" data-a="open" data-id="${e.collabId}"><div><div class="t">${esc(e.title)}</div><div class="s">${esc(collab(e.collabId).name)} · ${fmtL(e.date)}</div></div><span class="pill" style="background:var(--c-ev-soft);color:var(--c-ev)">${rel(e.date)}</span></div>`).join('') || '<div class="empty">Rien dans les 30 prochains jours.</div>'}</div></section>
+    </div>
+  </div>
+  <section class="card"><div class="ch"><h2>Derniers échanges, tous rôles</h2><span class="small muted">À lire avant d'appeler un collaborateur</span></div>
+    <div class="list">${recent.map(followupRow).join('')}</div></section>`;
+}
+function alertHTML(w, withName){
+  const c = collab(w.collabId);
+  return `<div class="alert ${w.level}"><span class="dot ${w.level}"></span><div>
+    <div><b>${withName?`<a href="#" data-a="open" data-id="${c.id}">${esc(c.name)}</a> · `:''}Alerte ${w.scope==='client'?'client':'collaborateur'}</b></div>
+    <div>${esc(w.text)}</div><div class="small muted">${esc(userName(w.authorId))} · ${fmtY(w.date)}${w.open?'':' · Clôturée le '+fmt(w.closedAt)}</div></div>
+    ${w.open && !withName ? `<button class="btn sec sm" data-a="closeWarn" data-id="${w.id}">Clôturer</button>`:''}</div>`;
+}
+function followupRow(f){
+  const c = collab(f.collabId), m = mission(f.missionId), mt = meteoAnswer(f);
+  const first = f.comment || Object.values(f.answers).find(v=>typeof v==='string' && v.length>25) || '';
+  return `<div class="li click" data-a="viewF" data-id="${f.id}"><div style="min-width:0">
+    <div class="t">${esc(c.name)} <span class="cat cat-${f.snapshot.category}">${f.snapshot.category}</span> <span class="muted" style="font-weight:500">${esc(f.snapshot.name)}</span></div>
+    <div class="s">${esc(userName(f.authorId))} · ${esc(m?.client||'')} · ${fmtY(f.date)}${first?' · '+esc(first.slice(0,110)):''}</div></div>
+    <span>${mt?`<span class="dot ${mt.toLowerCase()}" title="Météo ${esc(mt)}"></span>`:''}</span></div>`;
+}
+
+/* Liste des collaborateurs */
+function vCollabs(){
+  const u = me(), q = ui.search.trim().toLowerCase();
+  const list = scope().filter(c=>!q || (c.name+' '+c.poste+' '+(curMission(c)?.client||'')).toLowerCase().includes(q));
+  return `<div class="head"><div><h1>${u.role==='Manager'?'Mes collaborateurs':'Collaborateurs'}</h1><p class="sub">Source de vérité : outil RH externe · dernière synchronisation le ${fmtY(S.lastSync)}</p></div>
+    <div class="actions"><input type="search" id="search" placeholder="Rechercher un nom, un client" value="${esc(ui.search)}" aria-label="Rechercher un collaborateur">
+    ${u.role==='Admin'?'<button class="btn sec" data-a="sync">Synchroniser les collaborateurs</button>':''}</div></div>
+  <div class="card tablewrap"><table><thead><tr><th></th><th>Collaborateur</th><th>Mission</th><th>Manager</th><th>Dernier suivi</th><th>Prochain jalon</th><th>Alertes</th></tr></thead><tbody>
+  ${list.map(c=>{ const m = curMission(c), w = weather(c);
+    const last = S.followups.filter(f=>f.collabId===c.id).sort((a,b)=>a.date<b.date?1:-1)[0];
+    const nx = S.notifs.filter(n=>n.collabId===c.id && n.status==='pending' && (u.role==='Admin'||n.category===myCat())).sort((a,b)=>a.due<b.due?-1:1)[0];
+    const nw = S.warnings.filter(x=>x.collabId===c.id && x.open).length;
+    return `<tr class="click" data-a="open" data-id="${c.id}"><td><span class="dot ${w}" title="Météo ${w}"></span></td>
+      <td><b>${esc(c.name)}</b><div class="small muted">${esc(c.poste)}</div></td>
+      <td>${m?esc(m.client)+` <span class="pill ${mStatus(m)==='Active'?'p-ok':mStatus(m)==='Prévue'?'p-acc':''}">${mStatus(m)}</span>`:'<span class="muted">Aucune</span>'}</td>
+      <td>${esc(userName(c.managerId))}</td>
+      <td>${last?`<span class="mono">${fmt(last.date)}</span> <span class="cat cat-${last.snapshot.category}">${last.snapshot.category}</span>`:'<span class="muted">Aucun</span>'}</td>
+      <td>${nx?`<span class="pill ${dueClass(nx.due)}">${esc(nx.label)} · ${fmt(nx.due)}</span>`:'<span class="muted">Aucun</span>'}</td>
+      <td>${nw?`<span class="pill p-bad">${nw}</span>`:''}</td></tr>` }).join('') || '<tr><td colspan="7" class="empty">Aucun collaborateur ne correspond.</td></tr>'}
+  </tbody></table></div>`;
+}
+
+/* Profil collaborateur */
+function vCollab(){
+  const c = collab(ui.collabId); if(!c || !inScope(c.id)) { ui.view='collabs'; return vCollabs() }
+  const ms = S.missions.filter(m=>m.collabId===c.id).sort((a,b)=>a.start>b.start?-1:1);
+  const fs = S.followups.filter(f=>f.collabId===c.id).sort((a,b)=>a.date<b.date?1:-1);
+  const cur = curMission(c), w = weather(c);
+  const tabs = [['synthese','Profil'],['missions','Missions ('+ms.length+')'],['suivis','Suivis ('+fs.length+')'],['notifs','Notifications']];
+  let body = '';
+  if(ui.tab==='synthese') body = tabSynthese(c, fs);
+  if(ui.tab==='missions') body = tabMissions(c, ms);
+  if(ui.tab==='suivis') body = tabSuivis(c, ms, fs);
+  if(ui.tab==='notifs') body = tabNotifs(c);
+  const fillable = CATS.some(canFill) && ms.some(m=>mStatus(m)!=='Terminée');
+  return `<div><button class="btn ghost" data-a="go" data-v="collabs">← Collaborateurs</button></div>
+  <div class="head"><div style="min-width:0"><h1 style="display:flex;align-items:center;gap:10px"><span class="dot ${w}" style="width:12px;height:12px" title="Météo ${w}"></span>${esc(c.name)}</h1>
+    <div class="meta" style="margin-top:6px"><span>${esc(c.poste)}</span><span>Client <b>${esc(cur?.client||'Aucun')}</b></span><span>Manager <b>${esc(userName(c.managerId))}</b></span><span>Commercial <b>${esc(userName(c.commercialId))}</b></span><span class="mono">${esc(c.ext)}</span></div></div>
+    <div class="actions">
+      <button class="btn sec" data-a="addWarn">Ajouter une alerte</button>
+      <button class="btn sec" data-a="addEvent">Ajouter un événement</button>
+      ${canCreateMission(c)?'<button class="btn sec" data-a="newMission">Nouvelle mission</button>':''}
+      ${fillable?'<button class="btn" data-a="newF">Nouveau suivi</button>':''}
+    </div></div>
+  <div class="tabs" role="tablist">${tabs.map(([k,l])=>`<button role="tab" aria-selected="${ui.tab===k}" data-a="tab" data-v="${k}">${l}</button>`).join('')}</div>
+  ${body}`;
+}
+function tabSynthese(c, fs){
+  const wsOpen = S.warnings.filter(w=>w.collabId===c.id && w.open), wsClosed = S.warnings.filter(w=>w.collabId===c.id && !w.open);
+  const evs = S.events.filter(e=>e.collabId===c.id).sort((a,b)=>a.date<b.date?-1:1);
+  const next = CATS.map(cat=>({cat, n:S.notifs.filter(n=>n.collabId===c.id && n.category===cat && n.status==='pending').sort((a,b)=>a.due<b.due?-1:1)[0]}));
+  const sum = S.summaries?.[c.id];
+  return `<div class="grid g3">${next.map(({cat,n})=>{ const r = n && meetingFor(n);
+    return `<div class="kpi"><span><span class="cat cat-${cat}">${cat}</span></span>${n?`<div style="font-weight:700;margin-top:6px">${esc(n.label)}</div><div><span class="pill ${dueClass(n.due)}">${dueText(n.due)}</span></div><div class="small muted">${r?'RDV planifié le '+fmt(r.date)+' à '+r.time:'Pas encore planifié'}</div>`:'<div class="muted" style="margin-top:6px">Aucun jalon en attente</div>'}</div>` }).join('')}</div>
+  <div class="grid g2" style="align-items:start">
+    <section class="card"><div class="ch"><h2>Alertes</h2><button class="btn ghost sm" data-a="addWarn">Ajouter</button></div><div class="cb">
+      <h3>Sur le client</h3>${wsOpen.filter(w=>w.scope==='client').map(w=>alertHTML(w)).join('') || '<p class="muted small">Aucune alerte client.</p>'}
+      <h3>Sur le collaborateur</h3>${wsOpen.filter(w=>w.scope==='collab').map(w=>alertHTML(w)).join('') || '<p class="muted small">Aucune alerte collaborateur.</p>'}
+      ${wsClosed.length?`<details><summary class="small muted">${wsClosed.length} alerte(s) clôturée(s)</summary><div class="cb" style="padding:8px 0 0">${wsClosed.map(w=>alertHTML(w)).join('')}</div></details>`:''}
+    </div></section>
+    <section class="card"><div class="ch"><h2>Événements spéciaux</h2><button class="btn ghost sm" data-a="addEvent">Ajouter</button></div><div class="list">
+      ${evs.map(e=>`<div class="li"><div><div class="t">${esc(e.title)}</div><div class="s">${fmtL(e.date)}${e.desc?' · '+esc(e.desc):''}</div></div><span class="pill" style="background:var(--c-ev-soft);color:var(--c-ev)">${e.date<T?'passé':rel(e.date)}</span></div>`).join('') || '<div class="empty">Aucun événement. Exemple : une MEP clé, une démo client.</div>'}
+    </div></section>
+  </div>
+  <section class="card ia"><div class="ch"><h2>Résumé des entretiens</h2>
+    ${sampleFn?`<button class="btn sm" data-a="summarize" ${fs.length?'':'disabled'}>${sum?'Régénérer avec l\'IA':'Générer avec l\'IA'}</button>`:'<span class="small muted">IA indisponible dans cette vue</span>'}</div>
+    <div class="cb"><div class="out" id="sumOut">${sum?esc(sum.text):(fs.length?esc(fs.slice(0,3).map(f=>'• '+fmt(f.date)+' ('+f.snapshot.category+') '+(f.comment||Object.values(f.answers).filter(v=>typeof v==='string'&&v.length>20)[0]||f.snapshot.name)).join('\n')):'Aucun entretien pour l\'instant.')}</div>
+    <span class="small muted">${sum?'Généré le '+fmtY(sum.date)+' à partir de '+sum.n+' suivis.':'Aperçu des 3 derniers suivis. L\'IA en fait une synthèse sur tout l\'historique.'}</span></div></section>`;
+}
+function tabMissions(c, ms){
+  return `<div class="grid g2">${ms.map(m=>{ const st = mStatus(m), n = S.followups.filter(f=>f.missionId===m.id).length, p = S.notifs.filter(x=>x.missionId===m.id && x.status==='pending').length;
+    return `<section class="card"><div class="ch"><h2>${esc(m.client)}</h2><span class="pill ${st==='Active'?'p-ok':st==='Prévue'?'p-acc':''}">${st}</span></div>
+      <div class="cb"><div class="meta"><span>Début <b class="mono">${fmtY(m.start)}</b></span><span>Fin <b class="mono">${m.end?fmtY(m.end):'Non définie'}</b></span></div>
+      <p>${esc(m.desc)||'<span class="muted">Pas de description.</span>'}</p>
+      <div class="meta"><span><b>${n}</b> suivis réalisés</span><span><b>${p}</b> rappels en attente</span></div>
+      <div><button class="btn ghost sm" data-a="missionF" data-id="${m.id}">Voir les suivis de cette mission</button></div></div></section>` }).join('') || '<div class="empty">Aucune mission.</div>'}</div>`;
+}
+function tabSuivis(c, ms, fs){
+  let list = fs;
+  if(ui.fMission) list = list.filter(f=>f.missionId===ui.fMission);
+  if(ui.fCat) list = list.filter(f=>f.snapshot.category===ui.fCat);
+  if(ui.fPeriod) list = list.filter(f=>f.date>=add(T,-Number(ui.fPeriod)));
+  return `<div class="actions" style="align-items:center">
+    <select id="fMission" aria-label="Filtrer par mission"><option value="">Toutes les missions</option>${ms.map(m=>`<option value="${m.id}" ${ui.fMission===m.id?'selected':''}>${esc(m.client)} (${mStatus(m)})</option>`).join('')}</select>
+    <select id="fCat" aria-label="Filtrer par rôle"><option value="">Tous les rôles</option>${CATS.map(k=>`<option ${ui.fCat===k?'selected':''}>${k}</option>`).join('')}</select>
+    <select id="fPeriod" aria-label="Filtrer par date"><option value="">Toute la période</option>${[[30,'30 derniers jours'],[90,'3 derniers mois'],[365,'12 derniers mois']].map(([v,l])=>`<option value="${v}" ${String(ui.fPeriod)===String(v)?'selected':''}>${l}</option>`).join('')}</select>
+    <span class="small muted">${list.length} suivi(s)</span></div>
+  <section class="card"><div class="list">${list.map(followupRow).join('') || '<div class="empty">Aucun suivi pour ces filtres.</div>'}</div></section>`;
+}
+function tabNotifs(c){
+  const logs = S.mails.filter(m=>m.subject.includes(c.name)).slice(0,12);
+  return `<div class="grid g2" style="align-items:start">
+    <section class="card"><div class="ch"><h2>Personnes à notifier</h2></div><div class="cb">
+      <p class="small muted">Elles reçoivent les alertes et les événements spéciaux de ${esc(c.name.split(' ')[0])}. Les rappels de jalons vont au rôle concerné.</p>
+      ${S.users.filter(u=>u.role!=='Admin').map(u=>`<label class="check"><input type="checkbox" data-a="notified" data-id="${u.id}" ${c.notified.includes(u.id)?'checked':''}> ${esc(u.name)} <span class="cat cat-${u.role}">${u.role}</span></label>`).join('')}
+    </div></section>
+    <section class="card"><div class="ch"><h2>Emails envoyés</h2></div><div class="list">
+      ${logs.map(m=>`<div class="li"><div style="min-width:0"><div class="t">${esc(m.subject)}</div><div class="s">${fmtY(m.date)} · à ${m.to.map(userName).map(esc).join(', ')}</div></div></div>`).join('') || '<div class="empty">Aucun email pour ce collaborateur.</div>'}
+    </div></section></div>`;
+}
+
+/* Saisie d'un suivi */
+function vFollowupNew(){
+  const d = ui.draft, c = collab(d.collabId);
+  const ms = S.missions.filter(m=>m.collabId===c.id && mStatus(m)!=='Terminée');
+  const tpls = latestTemplates().filter(t=>t.active && canFill(t.category));
+  const t = S.templates.find(x=>x.id===d.templateId);
+  const qHTML = qq => { const v = d.answers[qq.id];
+    let inp = '';
+    if(qq.type==='text') inp = `<textarea id="q_${qq.id}" data-q="${qq.id}" rows="2">${esc(v||'')}</textarea>`;
+    if(qq.type==='select') inp = `<div class="seg" role="group" aria-label="${esc(qq.label)}">${qq.options.map(o=>`<button type="button" data-a="ans" data-q="${qq.id}" data-v="${esc(o)}" aria-pressed="${v===o}">${esc(o)}</button>`).join('')}</div>`;
+    if(qq.type==='bool') inp = `<div class="seg" role="group" aria-label="${esc(qq.label)}">${[['true','Oui'],['false','Non']].map(([k,l])=>`<button type="button" data-a="ans" data-q="${qq.id}" data-v="${k}" aria-pressed="${String(v)===k}">${l}</button>`).join('')}</div>`;
+    return `<div class="field"><label ${qq.type==='text'?`for="q_${qq.id}"`:''} class="${qq.type==='text'?'':'lbl'}">${esc(qq.label)} ${qq.required?'<span class="req">*</span>':''}</label>${inp}</div>` };
+  return `<div><button class="btn ghost" data-a="open" data-id="${c.id}">← ${esc(c.name)}</button></div>
+  <div class="head"><div><h1>Nouveau suivi</h1><p class="sub">${esc(c.name)} · ${esc(me().name)} (${me().role}) · ${fmtL(T)}</p></div></div>
+  <div class="split">
+    <section class="card"><div class="cb" style="gap:16px">
+      <div class="grid g2">
+        <div class="field"><label for="dMission">Mission</label><select id="dMission">${ms.map(m=>`<option value="${m.id}" ${d.missionId===m.id?'selected':''}>${esc(m.client)} (${mStatus(m)})</option>`).join('')}</select></div>
+        <div class="field"><label for="dTpl">Questionnaire</label><select id="dTpl">${tpls.map(x=>`<option value="${x.id}" ${d.templateId===x.id?'selected':''}>${x.category} · ${esc(x.name)}</option>`).join('')}</select></div>
+      </div>
+      ${t?`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="cat cat-${t.category}">${t.category}</span><b>${esc(t.name)}</b><span class="small muted mono">v${t.version}</span></div>
+      ${t.questions.map(qHTML).join('')}
+      <div class="field"><label for="dComment">Commentaire libre</label><textarea id="dComment" rows="3" placeholder="Ce que les autres doivent savoir avant de l'appeler">${esc(d.comment)}</textarea></div>`:'<p class="muted">Aucun questionnaire disponible pour ton rôle.</p>'}
+      <div class="foot" style="align-items:center"><span class="lock">Un suivi validé est historisé et n'est plus modifiable</span>
+        <span class="actions"><span class="err" id="dErr">${esc(d.err||'')}</span><button class="btn sec" data-a="open" data-id="${c.id}">Annuler</button><button class="btn" data-a="submitF" ${t?'':'disabled'}>Valider le suivi</button></span></div>
+    </div></section>
+    <aside class="card ia"><div class="ch"><h2>Pré-remplir avec l'IA</h2></div><div class="cb">
+      <p class="small">Colle la transcription de l'appel (Teams, Whisper, notes vocales) ou charge un fichier texte. L'IA remplit le questionnaire, tu relis puis tu valides.</p>
+      <textarea id="iaText" rows="7" placeholder="Ex. Appel avec Julien ce matin, il se sent bien dans l'équipe, le client est content…">${esc(d.transcript||'')}</textarea>
+      <div class="actions"><label class="btn sec sm" for="iaFile">Charger un .txt</label><input type="file" id="iaFile" accept=".txt,.vtt,.srt,text/plain" hidden>
+      ${sampleFn?`<button class="btn sm" data-a="prefill" ${t?'':'disabled'}>Remplir le questionnaire</button>`:'<span class="small muted">IA indisponible dans cette vue</span>'}</div>
+      <span class="small muted" id="iaStatus">${esc(d.iaStatus||'')}</span>
+    </div></aside>
+  </div>`;
+}
+
+/* Lecture d'un suivi (verrouillé) */
+function vFollowupView(){
+  const f = S.followups.find(x=>x.id===ui.followupId); if(!f) { ui.view='dashboard'; return vDashboard() }
+  const c = collab(f.collabId), m = mission(f.missionId);
+  const show = (qq) => { const v = f.answers[qq.id]; if(v===undefined || v===null || v==='') return '<span class="muted">Non renseigné</span>';
+    if(qq.type==='bool') return v===true||v==='true' ? 'Oui' : 'Non';
+    if(/météo/i.test(qq.label)) return `<span class="dot ${String(v).toLowerCase()}"></span> ${esc(v)}`; return esc(v) };
+  return `<div><button class="btn ghost" data-a="open" data-id="${c.id}">← ${esc(c.name)}</button></div>
+  <div class="head"><div><h1>${esc(f.snapshot.name)}</h1><p class="sub">${esc(c.name)} · ${esc(m?.client||'')} · ${fmtL(f.date)}</p></div>
+    <span class="lock">Validé · non modifiable</span></div>
+  <section class="card"><div class="ch"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="cat cat-${f.snapshot.category}">${f.snapshot.category}</span><span>par <b>${esc(userName(f.authorId))}</b></span><span class="small muted mono">template v${f.snapshot.version}</span></div></div>
+    <div class="cb"><div class="answers">${f.snapshot.questions.map(qq=>`<div>${esc(qq.label)}</div><div>${show(qq)}</div>`).join('')}<div>Commentaire libre</div><div>${f.comment?esc(f.comment):'<span class="muted">Aucun</span>'}</div></div></div></section>`;
+}
+
+/* Calendrier */
+function vCalendar(){
+  const u = me(), start = add(T,-7), days = 42, sc = scope();
+  const dayList = Array.from({length:days},(_,i)=>add(start,i));
+  const idx = d => diff(d,start);
+  const W = 30;
+  const rowFor = c => {
+    const items = [];
+    const nots = CATS.map(cat=>S.notifs.filter(n=>n.collabId===c.id && n.category===cat && n.status==='pending' && (!ui.calMine || isMine(n))).sort((a,b)=>a.due<b.due?-1:1)[0]).filter(Boolean);
+    nots.forEach(n=>{ const r = meetingFor(n);
+      if(r){ if(r.date>=start && idx(r.date)<days) items.push({l:idx(r.date),w:1.6,cls:'g-meet '+n.category,txt:r.time,act:'meet',id:r.id,title:'RDV '+n.category+' : '+n.label+' le '+fmt(r.date)+' à '+r.time}); return }
+      if(n.due<T){ items.push({l:idx(T),w:1.6,cls:'g-bar late',txt:'Retard',act:'plan',id:n.id,title:n.category+' : '+n.label+' en retard depuis le '+fmt(n.due)}); return }
+      const a = idx(T), b = Math.min(idx(n.due), days-1); if(a>=days) return;
+      items.push({l:a,w:Math.max(1.6,b-a+1),cls:'g-bar '+n.category,txt:n.category+' · '+n.label,act:'plan',id:n.id,title:'À planifier avant le '+fmt(n.due)+' : '+n.category+' '+n.label});
+    });
+    S.meetings.filter(r=>r.collabId===c.id && r.followupId && r.date>=start && r.date<T).forEach(r=>items.push({l:idx(r.date),w:1,cls:'g-done',txt:'✓',act:'viewF',id:r.followupId,title:'RDV réalisé'}));
+    S.followups.filter(f=>f.collabId===c.id && f.date>=start && f.date<=T && (!ui.calMine || f.snapshot.category===myCat() || u.role==='Admin')).forEach(f=>items.push({l:idx(f.date),w:1,cls:'g-done',txt:'✓',act:'viewF',id:f.id,title:f.snapshot.category+' : '+f.snapshot.name+' réalisé le '+fmt(f.date)}));
+    S.events.filter(e=>e.collabId===c.id && e.date>=start && idx(e.date)<days).forEach(e=>items.push({l:idx(e.date),w:1,cls:'g-ev',txt:'★',act:'open',id:c.id,title:e.title+' le '+fmt(e.date)}));
+    // empilement simple pour éviter les chevauchements
+    const lanes = []; items.sort((a,b)=>a.l-b.l).forEach(it=>{ let k = lanes.findIndex(end=>end<=it.l); if(k<0){ k=lanes.length; lanes.push(0) } lanes[k]=it.l+it.w+0.15; it.lane=k });
+    const h = Math.max(52, 12 + lanes.length*24);
+    return `<div class="g-row"><div class="g-name"><b>${esc(c.name)}</b><span>${esc(curMission(c)?.client||'')}</span></div>
+      <div class="g-track" style="height:${h}px"><div class="g-days">${dayList.map(d=>`<i class="${[0,6].includes(parse(d).getDay())?'we':''}"></i>`).join('')}</div>
+      <div class="g-today" style="left:${idx(T)*W+W/2}px"></div>
+      ${items.map(it=>`<button class="g-item ${it.cls}" style="left:${it.l*W+2}px;width:${it.w*W-4}px;top:${8+it.lane*24}px" data-a="${it.act}" data-id="${it.id}" title="${esc(it.title)}" aria-label="${esc(it.title)}">${esc(it.txt)}</button>`).join('')}
+      </div></div>` };
+  const toPlan = S.notifs.filter(n=>n.status==='pending' && inScope(n.collabId) && isMine(n) && !meetingFor(n) && n.due<=add(T,35)).sort((a,b)=>a.due<b.due?-1:1);
+  return `<div class="head"><div><h1>Calendrier</h1><p class="sub">Une barre en pointillés court d'aujourd'hui à la date limite tant que le suivi n'est pas planifié. Clique dessus pour planifier.</p></div>
+    <div class="seg" role="group" aria-label="Filtre"><button data-a="calMine" data-v="1" aria-pressed="${ui.calMine}">${u.role==='Admin'?'Tous':'Mes jalons'}</button><button data-a="calMine" data-v="0" aria-pressed="${!ui.calMine}">Tous les rôles</button></div></div>
+  <div class="legend"><span><i style="background:var(--c-man)"></i>Manager</span><span><i style="background:var(--c-rh)"></i>RH</span><span><i style="background:var(--c-com)"></i>Commercial</span><span><i style="border:1.5px dashed var(--muted)"></i>À planifier</span><span><i style="background:var(--bad-soft);border:1.5px dashed var(--bad)"></i>En retard</span><span><i style="background:var(--ok-soft)"></i>Réalisé</span><span><i style="background:var(--c-ev-soft)"></i>Événement spécial</span></div>
+  <div class="gantt" style="--days:${days}"><div class="g-inner">
+    <div class="g-row g-head"><div class="g-name"><b>${fmt(start)} au ${fmt(add(start,days-1))}</b><span>${sc.length} collaborateurs</span></div>
+      <div class="g-days">${dayList.map(d=>{ const x = parse(d); return `<span class="${d===T?'td':[0,6].includes(x.getDay())?'we':''}">${'DLMMJVS'[x.getDay()]}<br>${x.getDate()}</span>` }).join('')}</div></div>
+    ${sc.map(rowFor).join('')}
+  </div></div>
+  <section class="card"><div class="ch"><h2>À planifier</h2><span class="small muted">L'invitation se télécharge au format Outlook (.ics)</span></div><div class="list">
+    ${toPlan.map(n=>`<div class="li"><div><div class="t">${esc(collab(n.collabId).name)} <span class="cat cat-${n.category}">${n.category}</span></div><div class="s">${esc(n.label)} · ${esc(mission(n.missionId).client)}</div><div style="margin-top:4px"><span class="pill ${dueClass(n.due)}">${dueText(n.due)}</span></div></div><button class="btn sm" data-a="plan" data-id="${n.id}">Planifier</button></div>`).join('') || '<div class="empty">Tous tes jalons proches sont planifiés.</div>'}
+  </div></section>`;
+}
+
+/* Notifications */
+function vNotifs(){
+  const mails = S.mails.filter(m=>m.to.includes(ui.me));
+  const pend = S.notifs.filter(n=>n.status==='pending' && inScope(n.collabId) && isMine(n)).sort((a,b)=>a.due<b.due?-1:1);
+  return `<div class="head"><div><h1>Notifications</h1><p class="sub">Canal MVP : email. Une relance unique 3 jours après l'échéance pour éviter le spam.</p></div>
+    ${mails.some(m=>!m.readBy.includes(ui.me))?'<button class="btn sec" data-a="readAll">Tout marquer comme lu</button>':''}</div>
+  <div class="grid g2" style="align-items:start">
+    <section class="card"><div class="ch"><h2>Boîte de réception</h2><span class="small muted">${esc(me().email)}</span></div><div>
+      ${mails.slice(0,40).map(m=>`<div class="mail ${m.readBy.includes(ui.me)?'':'unread'}" data-a="readMail" data-id="${m.id}"><span class="ms">${esc(m.subject)}</span><span class="small">${esc(m.body)}</span><span class="small muted">${fmtY(m.date)} · ${m.kind==='relance'?'Relance':m.kind==='warning'?'Alerte':m.kind==='event'?'Événement spécial':'Rappel de jalon'}</span></div>`).join('') || '<div class="empty">Aucun email reçu.</div>'}
+    </div></section>
+    <section class="card"><div class="ch"><h2>Rappels planifiés</h2><span class="small muted">${pend.length}</span></div><div class="tablewrap"><table><thead><tr><th>Collaborateur</th><th>Jalon</th><th>Échéance</th><th>Statut</th></tr></thead><tbody>
+      ${pend.map(n=>`<tr class="click" data-a="open" data-id="${n.collabId}"><td><b>${esc(collab(n.collabId).name)}</b></td><td><span class="cat cat-${n.category}">${n.category}</span> ${esc(n.label)}</td><td class="mono">${fmt(n.due)}</td><td>${n.relanceAt?'<span class="pill p-bad">Relancé le '+fmt(n.relanceAt)+'</span>':n.sentAt?'<span class="pill p-warn">Envoyé le '+fmt(n.sentAt)+'</span>':'<span class="pill">Programmé</span>'}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">Aucun rappel en attente.</td></tr>'}
+    </tbody></table></div></section>
+  </div>`;
+}
+
+/* Templates (Admin) */
+function vTemplates(){
+  const latest = latestTemplates();
+  const used = fam => S.followups.some(f=>S.templates.find(t=>t.id===f.templateId)?.family===fam);
+  return `<div class="head"><div><h1>Templates et jalons</h1><p class="sub">Workflow fixe, contenu flexible. Un template publié n'est jamais modifié : chaque changement crée une nouvelle version, l'historique reste cohérent.</p></div>
+    <button class="btn" data-a="newTpl">Nouveau template</button></div>
+  <div class="grid g3" style="align-items:start">${CATS.map(cat=>`<section class="card"><div class="ch"><h2><span class="cat cat-${cat}">${cat}</span></h2></div><div class="list">
+    ${latest.filter(t=>t.category===cat).map(t=>`<div class="li"><div style="min-width:0"><div class="t">${esc(t.name)} ${t.system?'<span class="pill">Système</span>':''}</div><div class="s">v${t.version} · ${t.questions.length} questions + commentaire${used(t.family)?' · utilisé':''}</div></div>
+      <div class="actions"><button class="btn ghost sm" data-a="editTpl" data-id="${t.id}">Modifier</button><label class="check small" title="Un template désactivé n'est plus sélectionnable"><input type="checkbox" data-a="toggleTpl" data-id="${t.id}" ${t.active?'checked':''}> Actif</label></div></div>`).join('')}
+  </div></section>`).join('')}</div>
+  <section class="card"><div class="ch"><h2>Jalons système</h2><span class="small muted">Planifiés automatiquement à la création d'une mission</span></div><div class="tablewrap"><table><thead><tr><th>Rôle</th><th>Jalons fixes</th><th>Puis</th></tr></thead><tbody>
+    ${CATS.map(cat=>{ const r = RULES[cat]; return `<tr><td><span class="cat cat-${cat}">${cat}</span></td><td>${r.fixed.map(([d,fam,l])=>l+' '+esc(S.templates.find(t=>t.family===fam).name)).join(' · ')}</td><td>tous les ${r.every} jours (${esc(S.templates.find(t=>t.family===r.rec).name)})</td></tr>` }).join('')}
+  </tbody></table></div></section>`;
+}
+function vTemplateEdit(){
+  const d = ui.tplDraft;
+  return `<div><button class="btn ghost" data-a="go" data-v="templates">← Templates</button></div>
+  <div class="head"><div><h1>${d.baseId?'Nouvelle version de « '+esc(d.name)+' »':'Nouveau template'}</h1><p class="sub">${d.baseId?'Les suivis déjà validés gardent la version précédente.':'Types disponibles : texte libre, choix unique, oui ou non.'}</p></div></div>
+  <div class="split">
+    <section class="card"><div class="cb" style="gap:14px">
+      <div class="grid g2"><div class="field"><label for="tName">Nom</label><input type="text" id="tName" value="${esc(d.name)}"></div>
+      <div class="field"><label for="tCat">Catégorie</label><select id="tCat" ${d.baseId?'disabled':''}>${CATS.map(k=>`<option ${d.category===k?'selected':''}>${k}</option>`).join('')}</select></div></div>
+      ${d.questions.map((qq,i)=>`<div class="qrow"><div class="qh"><span class="mono small muted">${i+1}</span>
+        <input type="text" data-tq="${i}" data-k="label" value="${esc(qq.label)}" placeholder="Intitulé de la question" aria-label="Intitulé de la question ${i+1}">
+        <select data-tq="${i}" data-k="type" aria-label="Type"><option value="text" ${qq.type==='text'?'selected':''}>Texte libre</option><option value="select" ${qq.type==='select'?'selected':''}>Choix unique</option><option value="bool" ${qq.type==='bool'?'selected':''}>Oui / Non</option></select></div>
+        ${qq.type==='select'?`<div class="field"><span class="hint">Options, une par ligne</span><textarea rows="3" data-tq="${i}" data-k="options">${esc(qq.options.join('\n'))}</textarea></div>`:''}
+        <div class="actions" style="justify-content:space-between;align-items:center"><label class="check small"><input type="checkbox" data-tq="${i}" data-k="required" ${qq.required?'checked':''}> Obligatoire</label>
+        <span class="actions"><button class="btn ghost sm" data-a="tqMove" data-i="${i}" data-d="-1" ${i?'':'disabled'} aria-label="Monter">↑</button><button class="btn ghost sm" data-a="tqMove" data-i="${i}" data-d="1" ${i<d.questions.length-1?'':'disabled'} aria-label="Descendre">↓</button><button class="btn danger sm" data-a="tqDel" data-i="${i}">Supprimer</button></span></div></div>`).join('')}
+      <div class="qrow" style="background:var(--sunk)"><div class="qh"><b>Commentaire libre</b><span class="lock">Toujours présent</span></div></div>
+      <div class="actions"><button class="btn sec sm" data-a="tqAdd" data-v="text">+ Texte libre</button><button class="btn sec sm" data-a="tqAdd" data-v="select">+ Choix unique</button><button class="btn sec sm" data-a="tqAdd" data-v="bool">+ Oui / Non</button></div>
+      <div class="foot" style="align-items:center"><span class="err">${esc(d.err||'')}</span><span class="actions"><button class="btn sec" data-a="go" data-v="templates">Annuler</button><button class="btn" data-a="saveTpl">Publier</button></span></div>
+    </div></section>
+    <aside class="card"><div class="ch"><h2>Aperçu</h2></div><div class="cb">${d.questions.map(qq=>`<div class="field"><span class="lbl">${esc(qq.label||'Sans titre')} ${qq.required?'<span class="req">*</span>':''}</span>${qq.type==='text'?'<textarea rows="2" disabled></textarea>':`<div class="seg">${(qq.type==='bool'?['Oui','Non']:qq.options).map(o=>`<button type="button" disabled>${esc(o)}</button>`).join('')}</div>`}</div>`).join('')}<div class="field"><span class="lbl">Commentaire libre</span><textarea rows="2" disabled></textarea></div></div></aside>
+  </div>`;
+}
+
+/* ---------- Modales et toasts ---------- */
+function modal(title, body, foot){
+  $('#modalRoot').innerHTML = `<div class="overlay" data-a="closeModalBg"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mT"><div class="mh"><h2 id="mT">${title}</h2><button class="btn ghost sm" data-a="closeModal" aria-label="Fermer">✕</button></div><div class="mb">${body}</div><div class="mf">${foot}</div></div></div>`;
+  const f = $('#modalRoot').querySelector('input,select,textarea'); if(f) f.focus();
+}
+const closeModal = () => $('#modalRoot').innerHTML = '';
+let toastT; function toast(msg){ $('#toastRoot').innerHTML = `<div class="toast">${esc(msg)}</div>`; clearTimeout(toastT); toastT = setTimeout(()=>$('#toastRoot').innerHTML='', 3600) }
+
+function planModal(n){
+  const c = collab(n.collabId), m = mission(n.missionId);
+  const def = n.due < T ? add(T,1) : (diff(n.due,T)>2 ? add(n.due,-2) : n.due);
+  modal('Planifier le suivi', `<p><b>${esc(c.name)}</b> · <span class="cat cat-${n.category}">${n.category}</span> ${esc(n.label)} · ${esc(m.client)}</p>
+    <p class="small muted">Date limite : ${fmtL(n.due)}</p>
+    <div class="grid g2"><div class="field"><label for="pDate">Date</label><input type="date" id="pDate" value="${def}"></div><div class="field"><label for="pTime">Heure</label><input type="time" id="pTime" value="12:30"></div></div>
+    <div class="field"><label for="pTitle">Intitulé</label><input type="text" id="pTitle" value="${esc(n.label+' · '+c.name)}"></div>
+    <p class="small muted">Conseil : midi ou après 17h pour ne pas gêner le client.</p>`,
+    `<button class="btn sec" data-a="closeModal">Annuler</button><button class="btn" data-a="savePlan" data-id="${n.id}">Planifier</button>`);
+}
+function meetModal(r){
+  const c = collab(r.collabId), n = S.notifs.find(x=>x.id===r.notifId);
+  modal('Rendez-vous de suivi', `<p><b>${esc(r.title)}</b></p><p>${fmtL(r.date)} à ${r.time} · organisé par ${esc(userName(r.organizerId))}</p>
+    <p class="small muted">Invités : ${esc(c.name)} (${esc(c.email)})</p>`,
+    `<button class="btn sec" data-a="ics" data-id="${r.id}" ${downloads?'':'disabled title="Téléchargement indisponible dans cette vue"'}>Invitation Outlook (.ics)</button>${n && n.status==='pending' && canFill(n.category)?`<button class="btn" data-a="fill" data-id="${n.id}">Remplir le suivi</button>`:''}`);
+}
+function icsFor(r){
+  const c = collab(r.collabId), org = S.users.find(u=>u.id===r.organizerId);
+  const dt = (r.date+'T'+r.time.replace(':','')+'00').replace(/-/g,'');
+  const [h,mi] = r.time.split(':').map(Number); const endH = pad(h+1)+pad(mi);
+  return ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Inov Team//Suivi de Mission//FR','METHOD:REQUEST','BEGIN:VEVENT','UID:'+r.id+'@suivi.inov-team.fr','DTSTAMP:'+T.replace(/-/g,'')+'T080000','DTSTART;TZID=Europe/Paris:'+dt,'DTEND;TZID=Europe/Paris:'+r.date.replace(/-/g,'')+'T'+endH+'00','SUMMARY:'+r.title,'DESCRIPTION:Suivi de mission Inov Team','ORGANIZER;CN='+org.name+':mailto:'+org.email,'ATTENDEE;CN='+c.name+';RSVP=TRUE:mailto:'+c.email,'END:VEVENT','END:VCALENDAR'].join('\r\n');
+}
+
+/* ---------- Actions ---------- */
+function startFollowup(collabId, missionId, family){
+  const c = collab(collabId);
+  const ms = S.missions.filter(m=>m.collabId===c.id && mStatus(m)!=='Terminée');
+  const tpls = latestTemplates().filter(t=>t.active && canFill(t.category));
+  const t = (family && tpls.find(x=>x.family===family)) || tpls[0];
+  ui.draft = {collabId, missionId: missionId || ms[0]?.id, templateId: t?.id, answers:{}, comment:'', transcript:'', err:''};
+  ui.view='followupNew'; render(); window.scrollTo(0,0);
+}
+const A = {
+  go(d){ ui.view=d.v; closeModal(); render(); window.scrollTo(0,0) },
+  open(d,el,e){ if(e) e.preventDefault(); ui.view='collab'; ui.collabId=d.id; ui.tab='synthese'; ui.fMission=''; ui.fCat=''; ui.fPeriod=''; closeModal(); render(); window.scrollTo(0,0) },
+  tab(d){ ui.tab=d.v; render() },
+  missionF(d){ ui.tab='suivis'; ui.fMission=d.id; render() },
+  viewF(d){ ui.followupId=d.id; ui.view='followupView'; closeModal(); render(); window.scrollTo(0,0) },
+  newF(){ startFollowup(ui.collabId) },
+  fill(d){ const n = S.notifs.find(x=>x.id===d.id); closeModal(); startFollowup(n.collabId, n.missionId, n.family) },
+  ans(d){ const t = S.templates.find(x=>x.id===ui.draft.templateId), qq = t.questions.find(x=>x.id===d.q);
+    let v = qq.type==='bool' ? d.v==='true' : d.v; ui.draft.answers[d.q] = ui.draft.answers[d.q]===v ? undefined : v; syncDraft(); render() },
+  submitF(){
+    syncDraft(); const d = ui.draft, t = S.templates.find(x=>x.id===d.templateId);
+    const miss = t.questions.filter(qq=>qq.required && (d.answers[qq.id]===undefined || d.answers[qq.id]==='' ));
+    if(miss.length){ d.err = 'À compléter : '+miss.map(x=>x.label).join(', '); return render() }
+    const ans = {}; Object.entries(d.answers).forEach(([k,v])=>{ if(v!==undefined && v!=='') ans[k]=v });
+    const f = {id:uid('f'),templateId:t.id,snapshot:{name:t.name,version:t.version,category:t.category,questions:JSON.parse(JSON.stringify(t.questions))},missionId:d.missionId,collabId:d.collabId,authorId:ui.me,date:T,answers:ans,comment:d.comment.trim(),locked:true};
+    S.followups.push(f); completeNotif(S,f);
+    const mt = meteoAnswer(f), c = collab(f.collabId);
+    let extra = '';
+    if(mt==='Orange' || mt==='Rouge'){
+      const w = {id:uid('w'),collabId:c.id,scope:'client',level:mt.toLowerCase(),text:'Météo '+mt.toLowerCase()+' au suivi commercial. '+(f.comment||ans[t.questions.find(x=>/retour/i.test(x.label))?.id]||''),date:T,authorId:ui.me,open:true};
+      S.warnings.push(w); mailTo(S,c.notified,'Alerte client : '+c.name,w.text,T,'warning'); extra=' Alerte envoyée à '+c.notified.length+' personne(s).';
+    }
+    processNotifs(S); save(); ui.followupId=f.id; ui.view='followupView'; ui.draft=null; render(); window.scrollTo(0,0); toast('Suivi validé et partagé.'+extra);
+  },
+  async prefill(){
+    syncDraft(); const d = ui.draft, t = S.templates.find(x=>x.id===d.templateId);
+    if(!d.transcript.trim()){ d.iaStatus='Colle d\'abord une transcription.'; return render() }
+    d.iaStatus='Analyse en cours…'; render();
+    const spec = t.questions.map(qq=>({id:qq.id,question:qq.label,type:qq.type,options:qq.type==='select'?qq.options:undefined}));
+    const prompt = 'Tu aides un '+me().role.toLowerCase()+' d\'une ESN à remplir un questionnaire de suivi de mission à partir de la transcription d\'un appel.\n'
+      +'Questionnaire (JSON) : '+JSON.stringify(spec)+'\n'
+      +'Règles : pour type "select", la valeur doit être exactement une des options ; pour "bool", true ou false ; pour "text", une phrase courte et factuelle en français, sans tiret. Si l\'information est absente, mets null.\n'
+      +'Réponds uniquement avec un objet JSON {"answers": {"<id>": valeur}, "comment": "synthèse en 2 phrases maximum de ce qu\'il faut retenir"}.\n\nTranscription :\n'+d.transcript.slice(0,20000);
+    try{
+      const r = await sampleFn.json(prompt,{modelTier:'default'});
+      let n = 0;
+      t.questions.forEach(qq=>{ let v = r?.answers?.[qq.id]; if(v===null||v===undefined) return;
+        if(qq.type==='select' && !qq.options.includes(v)) return;
+        if(qq.type==='bool') v = v===true||v==='true'; if(qq.type==='text') v = String(v);
+        d.answers[qq.id]=v; n++ });
+      if(r?.comment && !d.comment) d.comment = String(r.comment);
+      d.iaStatus = n+' réponse(s) pré-remplie(s). Relis avant de valider.';
+    }catch(e){ d.iaStatus = e?.code==='not_granted'||e?.code==='sampling_disabled' ? 'L\'IA n\'est pas autorisée pour cette page.' : e?.code==='rate_limited' ? 'Trop de demandes, réessaie dans un moment.' : 'L\'IA n\'a pas pu remplir le questionnaire. Réessaie ou remplis à la main.' }
+    if(ui.view==='followupNew' && ui.draft===d) render();
+  },
+  async summarize(){
+    const c = collab(ui.collabId), fs = S.followups.filter(f=>f.collabId===c.id).sort((a,b)=>a.date<b.date?-1:1);
+    const out = $('#sumOut'); out.textContent='Analyse des entretiens…';
+    const lines = fs.map(f=>fmtY(f.date)+' · '+f.snapshot.category+' ('+userName(f.authorId)+') · '+f.snapshot.name+' : '+f.snapshot.questions.map(qq=>f.answers[qq.id]!==undefined?qq.label+' = '+(f.answers[qq.id]===true?'oui':f.answers[qq.id]===false?'non':f.answers[qq.id]):'').filter(Boolean).join(' ; ')+(f.comment?' ; commentaire : '+f.comment:'')).join('\n');
+    const al = S.warnings.filter(w=>w.collabId===c.id && w.open).map(w=>'Alerte '+w.scope+' ('+w.level+') : '+w.text).join('\n');
+    const ev = S.events.filter(e=>e.collabId===c.id && e.date>=T).map(e=>'Événement '+fmtY(e.date)+' : '+e.title).join('\n');
+    const prompt = 'Voici l\'historique des entretiens de suivi d\'un consultant d\'ESN ('+c.name+', '+c.poste+'), écrits par son manager, les RH et le commercial.\n'
+      +'Rédige en français un résumé lisible en 30 secondes : 4 puces au maximum commençant par « • », puis une ligne « À faire : » avec l\'action prioritaire. Pas de tiret, pas de titre, pas de formule d\'introduction.\n\n'+lines+(al?'\n\n'+al:'')+(ev?'\n\n'+ev:'');
+    try{
+      const r = await sampleFn(prompt,{onText:({text})=>{ const o = $('#sumOut'); if(o) o.textContent=text }});
+      S.summaries = S.summaries||{}; S.summaries[c.id] = {text:r.text,date:T,n:fs.length}; save(); render();
+    }catch(e){ const o = $('#sumOut'); if(o) o.textContent = e?.text || (e?.code==='not_granted'?'L\'IA n\'est pas autorisée pour cette page.':'Le résumé n\'a pas pu être généré. Réessaie.') }
+  },
+  addWarn(){ const c = collab(ui.collabId);
+    modal('Ajouter une alerte', `<p class="small muted">Notifie : ${c.notified.map(userName).map(esc).join(', ')}</p>
+      <div class="field"><span class="lbl">Porte sur</span><div class="seg" id="wScope"><button type="button" data-a="segPick" aria-pressed="true" data-v="client">Le client</button><button type="button" data-a="segPick" aria-pressed="false" data-v="collab">Le collaborateur</button></div></div>
+      <div class="field"><span class="lbl">Niveau</span><div class="seg" id="wLevel"><button type="button" data-a="segPick" aria-pressed="true" data-v="orange">Vigilance</button><button type="button" data-a="segPick" aria-pressed="false" data-v="rouge">Risque fort</button></div></div>
+      <div class="field"><label for="wText">Description</label><textarea id="wText" rows="3" placeholder="Ex. Le client annonce une baisse de budget au T1"></textarea></div><span class="err" id="mErr"></span>`,
+      `<button class="btn sec" data-a="closeModal">Annuler</button><button class="btn" data-a="saveWarn">Ajouter et notifier</button>`) },
+  segPick(d,el){ el.parentElement.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed', b===el)) },
+  saveWarn(){ const c = collab(ui.collabId), text = $('#wText').value.trim(); if(!text){ $('#mErr').textContent='Décris l\'alerte.'; return }
+    const w = {id:uid('w'),collabId:c.id,scope:$('#wScope [aria-pressed="true"]').dataset.v,level:$('#wLevel [aria-pressed="true"]').dataset.v,text,date:T,authorId:ui.me,open:true};
+    S.warnings.push(w); mailTo(S,c.notified,'Alerte '+(w.scope==='client'?'client':'collaborateur')+' : '+c.name,text,T,'warning'); save(); closeModal(); render(); toast('Alerte ajoutée, '+c.notified.length+' personne(s) notifiée(s).') },
+  closeWarn(d){ const w = S.warnings.find(x=>x.id===d.id); w.open=false; w.closedAt=T; save(); render(); toast('Alerte clôturée.') },
+  addEvent(){ const c = collab(ui.collabId);
+    modal('Ajouter un événement spécial', `<div class="field"><label for="eTitle">Événement</label><input type="text" id="eTitle" placeholder="Ex. MEP clé, démo client, fin de période d'essai"></div>
+      <div class="field"><label for="eDate">Date</label><input type="date" id="eDate" value="${add(T,7)}"></div>
+      <div class="field"><label for="eDesc">Précision <span class="hint">facultatif</span></label><input type="text" id="eDesc"></div>
+      <p class="small muted">Notifie : ${c.notified.map(userName).map(esc).join(', ')}</p><span class="err" id="mErr"></span>`,
+      `<button class="btn sec" data-a="closeModal">Annuler</button><button class="btn" data-a="saveEvent">Ajouter</button>`) },
+  saveEvent(){ const c = collab(ui.collabId), title = $('#eTitle').value.trim(), date = $('#eDate').value; if(!title||!date){ $('#mErr').textContent='Indique un intitulé et une date.'; return }
+    S.events.push({id:uid('e'),collabId:c.id,date,title,desc:$('#eDesc').value.trim()}); mailTo(S,c.notified,'Événement spécial : '+title+' · '+c.name,'Prévu le '+fmtY(date)+'.',T,'event'); save(); closeModal(); render(); toast('Événement ajouté.') },
+  newMission(){ modal('Nouvelle mission', `<div class="field"><label for="nClient">Client</label><input type="text" id="nClient" placeholder="Ex. Amadeus"></div>
+      <div class="grid g2"><div class="field"><label for="nStart">Début</label><input type="date" id="nStart" value="${add(T,7)}"></div><div class="field"><label for="nEnd">Fin <span class="hint">facultatif</span></label><input type="date" id="nEnd"></div></div>
+      <div class="field"><label for="nDesc">Description</label><textarea id="nDesc" rows="3"></textarea></div>
+      <p class="small muted">Les rappels J+1, J+7 et J+30 (manager), J+30 (RH) et J+7, J+30, J+90 (commercial) seront planifiés automatiquement.</p><span class="err" id="mErr"></span>`,
+      `<button class="btn sec" data-a="closeModal">Annuler</button><button class="btn" data-a="saveMission">Créer la mission</button>`) },
+  saveMission(){ const client = $('#nClient').value.trim(), start = $('#nStart').value, end = $('#nEnd').value;
+    if(!client||!start){ $('#mErr').textContent='Le client et la date de début sont obligatoires.'; return }
+    if(end && end<start){ $('#mErr').textContent='La date de fin doit suivre la date de début.'; return }
+    const m = {id:uid('m'),collabId:ui.collabId,client,start,end,desc:$('#nDesc').value.trim()}; S.missions.push(m);
+    const n = genNotifs(S,m); processNotifs(S); save(); closeModal(); ui.tab='missions'; render(); toast('Mission créée ('+mStatus(m)+'), '+n+' rappels planifiés.') },
+  plan(d){ const n = S.notifs.find(x=>x.id===d.id); if(n) planModal(n) },
+  savePlan(d){ const n = S.notifs.find(x=>x.id===d.id), date = $('#pDate').value, time = $('#pTime').value||'12:30'; if(!date) return;
+    const r = {id:uid('r'),collabId:n.collabId,missionId:n.missionId,notifId:n.id,date,time,organizerId:ui.me,title:$('#pTitle').value.trim()||n.label};
+    S.meetings.push(r); save(); render(); meetModal(r); toast('Rendez-vous planifié le '+fmt(date)+' à '+time+'.') },
+  meet(d){ const r = S.meetings.find(x=>x.id===d.id); if(r) meetModal(r) },
+  async ics(d){ const r = S.meetings.find(x=>x.id===d.id); if(!r||!downloads) return;
+    try{ await downloads.save({filename:'suivi-'+collab(r.collabId).name.toLowerCase().replace(/[^a-z]+/g,'-')+'-'+r.date+'.ics', data:icsFor(r)}); toast('Invitation prête à ouvrir dans Outlook.') }
+    catch(e){ toast(e?.code==='declined'?'Téléchargement annulé.':e?.code==='rejected_extension'?'Le format .ics est refusé dans cette vue.':'Le téléchargement n\'a pas pu démarrer.') } },
+  calMine(d){ ui.calMine = d.v==='1'; saveUi(); render() },
+  readMail(d){ const m = S.mails.find(x=>x.id===d.id); if(!m.readBy.includes(ui.me)) m.readBy.push(ui.me); save(); render() },
+  readAll(){ S.mails.forEach(m=>{ if(m.to.includes(ui.me) && !m.readBy.includes(ui.me)) m.readBy.push(ui.me) }); save(); render() },
+  sync(){ let created = 0;
+    if(!S.collabs.some(c=>c.ext==='BD-1066')){ S.collabs.push({id:uid('c'),ext:'BD-1066',name:'Nora Haddad',email:'n.haddad@inov-team.fr',poste:'Ingénieure Cybersécurité',managerId:'u_gael',commercialId:'u_alex',notified:['u_gael','u_alex','u_lorine']}); created=1 }
+    S.lastSync = T; save(); render(); toast('Synchronisation terminée : '+created+' créé(s), '+(S.collabs.length-created)+' mis à jour, managers associés.') },
+  toggleTpl(d,el){ const t = S.templates.find(x=>x.id===d.id); t.active = el.checked; save(); toast(t.active?'Template activé.':'Template désactivé, il n\'est plus sélectionnable.') },
+  newTpl(){ ui.tplDraft = {baseId:null,name:'',category:'Manager',questions:[{id:uid('q'),label:'',type:'text',options:[],required:false}]}; ui.view='templateEdit'; render() },
+  editTpl(d){ const t = S.templates.find(x=>x.id===d.id); ui.tplDraft = {baseId:t.id,family:t.family,name:t.name,category:t.category,questions:JSON.parse(JSON.stringify(t.questions))}; ui.view='templateEdit'; render() },
+  tqAdd(d){ syncTpl(); ui.tplDraft.questions.push({id:uid('q'),label:'',type:d.v,options:d.v==='select'?['Option 1','Option 2']:[],required:false}); render() },
+  tqDel(d){ syncTpl(); ui.tplDraft.questions.splice(Number(d.i),1); render() },
+  tqMove(d){ syncTpl(); const q = ui.tplDraft.questions, i = Number(d.i), j = i+Number(d.d); [q[i],q[j]]=[q[j],q[i]]; render() },
+  saveTpl(){ syncTpl(); const d = ui.tplDraft;
+    if(!d.name.trim()){ d.err='Donne un nom au template.'; return render() }
+    if(d.questions.some(qq=>!qq.label.trim())){ d.err='Chaque question a besoin d\'un intitulé.'; return render() }
+    if(d.questions.some(qq=>qq.type==='select' && qq.options.length<2)){ d.err='Un choix unique demande au moins deux options.'; return render() }
+    if(d.baseId){ const base = S.templates.find(t=>t.id===d.baseId); base.active=false;
+      const v = Math.max(...S.templates.filter(t=>t.family===base.family).map(t=>t.version))+1;
+      S.templates.push({id:base.family+'_v'+v,family:base.family,version:v,name:d.name.trim(),category:base.category,system:base.system,active:true,published:true,questions:d.questions}); toast('Version '+v+' publiée.') }
+    else { const fam = uid('tf'); S.templates.push({id:fam+'_v1',family:fam,version:1,name:d.name.trim(),category:d.category,system:false,active:true,published:true,questions:d.questions}); toast('Template publié.') }
+    save(); ui.view='templates'; ui.tplDraft=null; render() },
+  notified(d,el){ const c = collab(ui.collabId); c.notified = el.checked ? [...new Set([...c.notified,d.id])] : c.notified.filter(x=>x!==d.id); save(); toast('Liste de notification mise à jour.') },
+  reset(){ modal('Réinitialiser la démo', '<p>Les suivis, missions et templates créés pendant la démo seront effacés de ce navigateur.</p>', '<button class="btn sec" data-a="closeModal">Annuler</button><button class="btn danger" data-a="doReset">Réinitialiser</button>') },
+  doReset(){ S = buildSeedHistory(seed()); processNotifs(S); save(); closeModal(); ui.view='dashboard'; render(); toast('Démo réinitialisée.') },
+  closeModal(){ closeModal() },
+  closeModalBg(d,el,e){ if(e.target===el) closeModal() }
+};
+function syncDraft(){ const d = ui.draft; if(!d) return;
+  document.querySelectorAll('[data-q]').forEach(el=>{ if(el.tagName==='TEXTAREA') d.answers[el.dataset.q]=el.value });
+  const c = $('#dComment'); if(c) d.comment=c.value; const ia = $('#iaText'); if(ia) d.transcript=ia.value; }
+function syncTpl(){ const d = ui.tplDraft; if(!d) return; const n = $('#tName'); if(n) d.name=n.value; const c = $('#tCat'); if(c && !c.disabled) d.category=c.value;
+  document.querySelectorAll('[data-tq]').forEach(el=>{ const q = d.questions[Number(el.dataset.tq)]; const k = el.dataset.k;
+    if(k==='label') q.label=el.value; if(k==='type') q.type=el.value; if(k==='required') q.required=el.checked; if(k==='options') q.options=el.value.split('\n').map(s=>s.trim()).filter(Boolean) }) }
+
+document.addEventListener('click', e=>{
+  const el = e.target.closest('[data-a]'); if(!el) return;
+  if(el.type==='checkbox') return;
+  const fn = A[el.dataset.a]; if(fn){ fn(el.dataset, el, e) }
+});
+document.addEventListener('change', e=>{
+  const el = e.target;
+  if(el.id==='whoSel'){ ui.me = el.value; saveUi(); if(['followupNew','templateEdit','followupView'].includes(ui.view) || (ui.view==='collab' && !inScope(ui.collabId)) || (ui.view==='templates' && me().role!=='Admin')) ui.view='dashboard'; render(); return }
+  if(el.type==='checkbox' && el.dataset.a && A[el.dataset.a]) { A[el.dataset.a](el.dataset, el, e); return }
+  if(el.id==='fMission'){ ui.fMission=el.value; render() }
+  if(el.id==='fCat'){ ui.fCat=el.value; render() }
+  if(el.id==='fPeriod'){ ui.fPeriod=el.value; render() }
+  if(el.id==='dMission'){ syncDraft(); ui.draft.missionId=el.value; render() }
+  if(el.id==='dTpl'){ syncDraft(); ui.draft.templateId=el.value; ui.draft.answers={}; ui.draft.err=''; render() }
+  if(el.dataset.k==='type'){ syncTpl(); const q = ui.tplDraft.questions[Number(el.dataset.tq)]; if(q.type==='select' && !q.options.length) q.options=['Option 1','Option 2']; render() }
+  if(el.id==='iaFile' && el.files[0]){ const r = new FileReader(); r.onload = () => { syncDraft(); ui.draft.transcript = String(r.result).slice(0,40000); ui.draft.iaStatus='Fichier chargé : '+el.files[0].name; render() }; r.readAsText(el.files[0]) }
+});
+document.addEventListener('input', e=>{
+  if(e.target.id==='search'){ ui.search = e.target.value; const pos = e.target.selectionStart; render(); const s = $('#search'); if(s){ s.focus(); s.setSelectionRange(pos,pos) } }
+});
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && $('#modalRoot').innerHTML) closeModal() });
+
+render();
+})();
+</script>
+
+</body>
+</html>
